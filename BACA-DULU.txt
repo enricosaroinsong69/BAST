@@ -1,0 +1,36 @@
+BERITA ACARA SERAH TERIMA HADIAH — aplikasi web (PWA)
+=====================================================
+
+ISI FOLDER
+  index.html              aplikasinya (satu berkas, sudah termasuk logo)
+  manifest.webmanifest    supaya bisa dipasang seperti aplikasi
+  sw.js                   supaya bisa dibuka tanpa internet
+  icon-192.png/512.png    ikon aplikasi
+  BACA-DULU.txt           berkas ini
+
+CARA PAKAI PALING CEPAT
+  Buka index.html lewat peramban (Chrome/Edge/Safari) — bisa langsung dipakai.
+
+CARA MEMASANG DI HP
+  1. Unggah seluruh isi folder ini ke hosting https (mis. GitHub Pages seperti
+     aplikasi Laporan Activity Marketing, atau Netlify Drop).
+  2. Buka alamatnya di Chrome (Android) atau Safari (iPhone).
+  3. Android: menu ⋮ > "Tambahkan ke layar Utama".
+     iPhone: tombol Bagikan > "Tambahkan ke Layar Utama".
+
+MENCETAK
+  Cetak      : langsung ke printer (Epson L3210/L3250 lewat AirPrint/Mopria).
+  Simpan PDF : membuat PDF A4 sendiri, cocok untuk dikirim ke WA/email,
+               dan untuk iPhone yang memblokir perintah cetak.
+  Bagikan JPG: mengirim lembar sebagai gambar.
+
+  Saat kotak cetak muncul pilih: kertas A4, margin "None / Tanpa margin",
+  skala 100%, dan matikan "Headers and footers". Ukuran lembar sudah dibuat
+  persis seperti FORM_BAST_HADIAH.pdf (kotak kepala mulai 8,7 mm dari tepi kiri,
+  16,9 mm dari tepi atas), jadi margin JANGAN diubah lagi di pengaturan cetak.
+
+CATATAN
+  - Data & foto disimpan di dalam HP/komputer (IndexedDB), tidak dikirim ke mana pun.
+  - Sesekali tekan "Simpan cadangan (.json)" di tab Data, terutama sebelum ganti HP.
+  - Kalau index.html diganti dengan versi baru, naikkan angka VERSI di sw.js
+    supaya HP mengambil versi terbaru.
