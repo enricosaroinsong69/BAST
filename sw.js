@@ -1,6 +1,6 @@
 /* Berita Acara Serah Terima Hadiah — service worker
    ATURAN: naikkan VERSI setiap kali index.html diganti. */
-var VERSI = 'bast-v1';
+var VERSI = "bast-v2";
 var ISI = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function(e){

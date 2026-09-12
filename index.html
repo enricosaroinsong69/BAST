@@ -95,7 +95,7 @@ html.ios .iosonly{display:block}
    ========================================================= */
 #lembar{background:transparent}
 .sheet{position:relative;width:210mm;height:297mm;background:#fff;overflow:hidden;
-  font-family:"Arial Narrow","Liberation Sans Narrow","Roboto Condensed","Helvetica Neue",Arial,Helvetica,sans-serif;color:#000;font-kerning:none}
+  font-family:Arial,Helvetica,"Liberation Sans",sans-serif;color:#000;font-kerning:none}
 .sheet div{position:absolute;white-space:nowrap;line-height:1}
 .sheet .wrap{white-space:normal}
 .bx{border:.35mm solid #000;background:transparent}
@@ -115,19 +115,22 @@ html.ios .iosonly{display:block}
 /* kotak isi */
 .bbox{left:8.7mm;top:54.7mm;width:192.7mm;height:222.7mm}
 .no{font-size:11pt;left:18.9mm}
-.lb{font-size:11pt;left:25.1mm;width:48mm}
+.lb{font-size:11pt;left:25.1mm;width:45.5mm}
 .tt{font-size:11pt;left:74.1mm}
 .vl{font-size:11pt;font-weight:700;left:82.3mm;width:115.1mm}
 .ul{left:81.7mm;width:115.7mm;height:.2mm;background:#000}
 
 /* kotak foto */
 .fbox{left:12.2mm;top:128.9mm;width:185.4mm;height:96.9mm}
-.fimg{position:absolute;left:13.0mm;top:129.7mm;width:183.8mm;height:95.3mm;object-fit:contain}
+.fimg{position:absolute;top:129.7mm;height:95.3mm;object-fit:contain}
+.f1{left:13.0mm;width:183.8mm}
+.fA{left:13.0mm;width:91.0mm}
+.fB{left:105.8mm;width:91.0mm}
 .fnone{left:12.2mm;top:172mm;width:185.4mm;text-align:center;font-size:11pt;color:#9aa7b2}
 
 /* tanggal */
-.dtc{left:154.6mm;width:13.4mm;font-size:11pt}
-.dtv{left:168.2mm;width:29.2mm;text-align:center;font-size:11pt}
+.dtc{left:154.6mm;width:12.4mm;font-size:11pt}
+.dtv{left:169mm;width:28.4mm;text-align:center;font-size:11pt}
 .dtu{left:153.9mm;top:233.8mm;width:43.5mm;height:.2mm;background:#000}
 
 /* tanda tangan */
@@ -234,15 +237,27 @@ html.ios .iosonly{display:block}
 
   <div class="card">
     <h2><i></i>8. Foto acara serah terima</h2>
-    <div class="drop" id="dropFoto">
-      <div class="ph" id="phFoto">Ketuk untuk memilih / memotret foto</div>
-      <img id="imgFoto" style="display:none" alt="">
+    <div class="row2">
+      <div style="flex:1;min-width:0">
+        <label>Foto 1 (kiri)</label>
+        <div class="drop" id="dropFoto">
+          <div class="ph" id="phFoto">Ketuk untuk memilih / memotret</div>
+          <img id="imgFoto" style="display:none" alt="">
+        </div>
+        <button class="btn ghost sm" id="btHapusFoto" style="margin-top:6px;width:100%">Hapus foto 1</button>
+      </div>
+      <div style="flex:1;min-width:0">
+        <label>Foto 2 (kanan, boleh kosong)</label>
+        <div class="drop" id="dropFoto2">
+          <div class="ph" id="phFoto2">Ketuk untuk memilih / memotret</div>
+          <img id="imgFoto2" style="display:none" alt="">
+        </div>
+        <button class="btn ghost sm" id="btHapusFoto2" style="margin-top:6px;width:100%">Hapus foto 2</button>
+      </div>
     </div>
     <input type="file" id="fileFoto" accept="image/*" style="display:none">
-    <div class="btns" style="margin-top:8px">
-      <button class="btn ghost sm" id="btHapusFoto">Hapus foto</button>
-    </div>
-    <p class="hint">Foto otomatis diperkecil (maks 1500 px) supaya aplikasi tetap ringan.</p>
+    <input type="file" id="fileFoto2" accept="image/*" style="display:none">
+    <p class="hint">Kalau hanya diisi satu foto, foto itu memakai seluruh kotak. Kalau dua-duanya diisi, kotak dibagi dua bersebelahan. Foto otomatis diperkecil (maks 1500 px).</p>
   </div>
 
   <div class="card">
@@ -421,7 +436,7 @@ function kosong(){
     bulan:t.getMonth(), tahun:t.getFullYear(), hadiah:'',
     outlet:(db&&db.def?db.def.outlet:'ASTRA DAIHATSU TOMOHON'),
     event:'', nama:'', ktp:'', alamat1:'', alamat2:'', hp:'', spk:'',
-    foto:'', kota:(db&&db.def?db.def.kota:'Tomohon'), tgl:iso(t),
+    foto:'', foto2:'', kota:(db&&db.def?db.def.kota:'Tomohon'), tgl:iso(t),
     penerima:'', sales:'', pic:(db&&db.def?db.def.pic:'KRISNI JACKY ENRIKO SAROINSONG')
   };
 }
@@ -544,8 +559,12 @@ function sheetHTML(d){
 
   /* --- kotak foto --- */
   h.push('<div class="bx fbox"></div>');
-  if(d.foto)h.push('<img class="fimg" src="'+d.foto+'" alt="">');
-  else h.push('<div class="fnone">(foto belum diunggah)</div>');
+  if(d.foto&&d.foto2){
+    h.push('<img class="fimg fA" src="'+d.foto+'" alt="">');
+    h.push('<img class="fimg fB" src="'+d.foto2+'" alt="">');
+  }else if(d.foto||d.foto2){
+    h.push('<img class="fimg f1" src="'+(d.foto||d.foto2)+'" alt="">');
+  }else h.push('<div class="fnone">(foto belum diunggah)</div>');
 
   /* --- tanggal --- */
   h.push('<div class="dtc fit" style="top:'+topFor(230.8,11).toFixed(2)+'mm"><span>'+esc(d.kota)+',</span></div>');
@@ -572,31 +591,22 @@ function sheetHTML(d){
   return h.join('');
 }
 
-/* Meniru huruf sempit (Aptos Narrow) pada berkas asli: seluruh teks dimampatkan
-   mendatar dengan satu faktor yang dihitung dari lebar judul pada berkas aslinya,
-   lalu dimampatkan lagi bila masih melewati kotaknya. */
-var MMPX=96/25.4, LEBAR_JUDUL_ASLI=69.2;   /* mm, "BERITA ACARA SERAH TERIMA HADIAH" 16pt */
+/* Teks memakai huruf Arial apa adanya; hanya dimampatkan mendatar bila
+   isian terlalu panjang sehingga melewati kotak/garisnya. */
 function rapikan(root){
-  var dasar=1, acu=root.querySelector('.t1>span');
-  if(acu){
-    acu.style.transform='none';
-    var w0=acu.offsetWidth;
-    if(w0>0)dasar=Math.min(1,(LEBAR_JUDUL_ASLI*MMPX)/w0);
-  }
   var el=root.querySelectorAll('.fit');
   for(var i=0;i<el.length;i++){
     var e=el[i], s=e.firstChild;
     if(!s||s.nodeType!==1)continue;
     s.style.transform='none';
-    var w=s.offsetWidth, cw=e.clientWidth, k=dasar;
-    if(w>0&&w*k>cw)k=cw/w;
-    k=Math.max(0.3,Math.min(1,k));
+    var w=s.offsetWidth, cw=e.clientWidth, k=1;
+    if(w>0&&w>cw)k=Math.max(0.3,cw/w);
     var tengah=window.getComputedStyle(e).textAlign==='center';
     s.style.transformOrigin='left top';
     if(tengah){
       var geser=(cw-w*k)/2 - s.offsetLeft;
       s.style.transform='translateX('+geser.toFixed(2)+'px) scaleX('+k.toFixed(4)+')';
-    }else{
+    }else if(k<1){
       s.style.transform='scaleX('+k.toFixed(4)+')';
     }
   }
@@ -803,7 +813,7 @@ function isiFormulir(){
   $('i-bulan').value=String(d.bulan);
   $('i-tahun').value=d.tahun;
   isiSalesSelect(d.sales);
-  fotoTampil(d.foto);
+  fotoTampil();
   $('editInfo').style.display=editId?'block':'none';
   if(editId)$('editInfo').textContent='Sedang menyunting data tersimpan atas nama '+(up(d.nama)||'—')+'. Tekan "Simpan ke daftar" untuk memperbarui.';
 }
@@ -863,18 +873,28 @@ function ingat(arr,v){
 }
 
 /* ---------- foto ---------- */
-function fotoTampil(src){
-  if(src){$('imgFoto').src=src;$('imgFoto').style.display='block';$('phFoto').style.display='none';}
-  else{$('imgFoto').removeAttribute('src');$('imgFoto').style.display='none';$('phFoto').style.display='block';}
+function satuFoto(idImg,idPh,src){
+  if(src){$(idImg).src=src;$(idImg).style.display='block';$(idPh).style.display='none';}
+  else{$(idImg).removeAttribute('src');$(idImg).style.display='none';$(idPh).style.display='block';}
+}
+function fotoTampil(){
+  satuFoto('imgFoto','phFoto',db.current.foto);
+  satuFoto('imgFoto2','phFoto2',db.current.foto2);
 }
 $('dropFoto').onclick=function(){$('fileFoto').click();};
-$('btHapusFoto').onclick=function(e){e.stopPropagation();db.current.foto='';fotoTampil('');simpanData();};
-$('fileFoto').onchange=function(){
-  var f=this.files&&this.files[0]; if(!f)return;
-  kecilkan(f,1500,0.82).then(function(d){db.current.foto=d;fotoTampil(d);simpanData();toast('Foto tersimpan');})
-   .catch(function(){toast('Foto gagal dibaca');});
-  this.value='';
-};
+$('dropFoto2').onclick=function(){$('fileFoto2').click();};
+$('btHapusFoto').onclick=function(e){e.stopPropagation();db.current.foto=db.current.foto2||'';db.current.foto2='';fotoTampil();simpanData();};
+$('btHapusFoto2').onclick=function(e){e.stopPropagation();db.current.foto2='';fotoTampil();simpanData();};
+function pasangUnggah(idInput,kunci){
+  $(idInput).onchange=function(){
+    var f=this.files&&this.files[0]; if(!f)return;
+    kecilkan(f,1500,0.82).then(function(d){db.current[kunci]=d;fotoTampil();simpanData();toast('Foto tersimpan');})
+     .catch(function(){toast('Foto gagal dibaca');});
+    this.value='';
+  };
+}
+pasangUnggah('fileFoto','foto');
+pasangUnggah('fileFoto2','foto2');
 function kecilkan(file,maks,mutu){
   return new Promise(function(res,rej){
     var fr=new FileReader();
@@ -1047,15 +1067,18 @@ function zipBuat(files){
   return new Blob(parts,{type:'application/zip'});
 }
 $('btZip').onclick=function(){
-  var f=[], pakai={}, ada={}, semua=db.saved.concat(db.current&&db.current.foto?[db.current]:[]);
+  var f=[], pakai={}, ada={}, semua=db.saved.concat(db.current&&(db.current.foto||db.current.foto2)?[db.current]:[]);
   for(var i=0;i<semua.length;i++){
-    var d=semua[i]; if(!d.foto)continue;
-    var sidik=d.foto.length+'_'+d.foto.substring(d.foto.length-40);
-    if(ada[sidik])continue; ada[sidik]=1;
-    var nm=(up(d.nama)||'TANPA NAMA').replace(/[\\\/:*?"<>|]+/g,'-');
-    pakai[nm]=(pakai[nm]||0)+1;
-    if(pakai[nm]>1)nm+=' ('+pakai[nm]+')';
-    f.push({nama:nm+'.jpg',data:b64bin(d.foto)});
+    var d=semua[i], fs=[d.foto,d.foto2];
+    for(var x=0;x<2;x++){
+      var img=fs[x]; if(!img)continue;
+      var sidik=img.length+'_'+img.substring(img.length-40);
+      if(ada[sidik])continue; ada[sidik]=1;
+      var nm=(up(d.nama)||'TANPA NAMA').replace(/[\\\/:*?"<>|]+/g,'-');
+      pakai[nm]=(pakai[nm]||0)+1;
+      if(pakai[nm]>1)nm+=' ('+pakai[nm]+')';
+      f.push({nama:nm+'.jpg',data:b64bin(img)});
+    }
   }
   if(!f.length){toast('Belum ada foto yang diunggah');return;}
   unduh(zipBuat(f),'Foto BAST '+iso(new Date())+'.zip');
@@ -1079,6 +1102,8 @@ function rapikanDB(){
   for(var k in a.def)if(db.def[k]===undefined)db.def[k]=a.def[k];
   ['sales','outlet','cabang','hadiah','event','pic','saved'].forEach(function(k){if(!db[k])db[k]=[];});
   if(!db.current)db.current=kosong();
+  if(db.current.foto2===undefined)db.current.foto2='';
+  for(var j0=0;j0<db.saved.length;j0++)if(db.saved[j0].foto2===undefined)db.saved[j0].foto2='';
   for(var i=0;i<db.saved.length;i++){
     if(!db.saved[i].id)db.saved[i].id='b'+Date.now()+i;
     if(db.saved[i].pilih===undefined)db.saved[i].pilih=true;
