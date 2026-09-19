@@ -69,6 +69,14 @@ html.ios input,html.ios select,html.ios textarea{font-size:16px}
 .item .ac{display:flex;flex-direction:column;gap:4px}
 .chk{display:flex;align-items:center;gap:6px;font-size:12px}
 .chk input{width:17px;height:17px}
+.sync{display:inline-block;font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 6px;margin-top:4px}
+.sync.ok{background:#e3f5ea;color:#16663a}
+.sync.antre{background:#fff4d6;color:#8a5a00}
+.sync.gagal{background:#fde5e7;color:#a3000d}
+.selrow{display:flex;gap:6px}
+.selrow select{flex:1;min-width:0}
+.selrow .btn{flex:0 0 auto}
+input[readonly]{background:#eef2f6;color:#46586a}
 .tag{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--nav);border-radius:4px;padding:1px 5px;margin-right:4px}
 
 /* ---------- pratinjau ---------- */
@@ -189,9 +197,22 @@ html.ios .iosonly{display:block}
       </div>
     </div>
     <div class="f">
-      <label>Hadiah</label>
+      <label>Hadiah dari List Hadiah</label>
+      <div class="selrow">
+        <select id="i-pilihHadiah"></select>
+        <button class="btn ghost sm" id="btMuatList" title="Muat ulang list dari sheet">↻</button>
+      </div>
+      <p class="hint" id="hadiahInfo"></p>
+    </div>
+    <div class="f">
+      <label>Nama hadiah</label>
       <input type="text" id="i-hadiah" list="dlHadiah" placeholder="KOMPOR GAS 2 TUNGKU KG-882T TEFLON">
       <datalist id="dlHadiah"></datalist>
+    </div>
+    <div class="f" id="boxTglEvent">
+      <label>Tanggal event (untuk List Hadiah)</label>
+      <input type="date" id="i-tglEvent">
+      <p class="hint">Hadiah yang diisi manual ditambahkan sebagai baris baru di sheet LIST HADIAH saat disimpan. Kosongkan bila sama dengan tanggal serah terima.</p>
     </div>
   </div>
 
@@ -382,6 +403,47 @@ html.ios .iosonly{display:block}
   </div>
 
   <div class="card">
+    <h2><i></i>Sambungan ke List Hadiah (Google Sheet)</h2>
+    <div class="f">
+      <label>Alamat Web App (Apps Script)</label>
+      <input type="text" id="s-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="f">
+      <label>Kata sandi (TOKEN di Kode.gs)</label>
+      <input type="text" id="s-token" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="btns">
+      <button class="btn" id="btTesSheet">Tes &amp; muat list hadiah</button>
+      <button class="btn ghost" id="btKirimTunda">Kirim yang tertunda</button>
+    </div>
+    <p class="hint" id="sheetInfo">Belum tersambung.</p>
+  </div>
+
+  <div class="card">
+    <h2><i></i>Tambah hadiah ke List Hadiah</h2>
+    <div class="f">
+      <label>Nama event</label>
+      <input type="text" id="t-event" list="dlEvent" placeholder="DAIFEST OKTOBER 2026">
+    </div>
+    <div class="row2">
+      <div class="f">
+        <label>Tanggal event</label>
+        <input type="date" id="t-tgl">
+      </div>
+      <div class="f">
+        <label>Jumlah unit</label>
+        <input type="number" id="t-qty" inputmode="numeric" min="1" max="50" value="1">
+      </div>
+    </div>
+    <div class="f">
+      <label>Nama hadiah</label>
+      <input type="text" id="t-hadiah" list="dlHadiah" placeholder="SETRIKA MASPION HA-110">
+    </div>
+    <button class="btn red" id="btTambahHadiah" style="width:100%">Tambahkan ke sheet</button>
+    <p class="hint">Tiap unit menjadi satu baris dengan KODE EVENT otomatis (mis. OKT26_01, OKT26_02) dan langsung bisa dipilih di Formulir.</p>
+  </div>
+
+  <div class="card">
     <h2><i></i>Cadangan data</h2>
     <div class="btns">
       <button class="btn ghost" id="btExport">Simpan cadangan (.json)</button>
@@ -436,7 +498,7 @@ function kosong(){
     bulan:t.getMonth(), tahun:t.getFullYear(), hadiah:'',
     outlet:(db&&db.def?db.def.outlet:'ASTRA DAIHATSU TOMOHON'),
     event:'', nama:'', ktp:'', alamat1:'', alamat2:'', hp:'', spk:'',
-    foto:'', foto2:'', kota:(db&&db.def?db.def.kota:'Tomohon'), tgl:iso(t),
+    foto:'', foto2:'', kode:'', tglEvent:'', kota:(db&&db.def?db.def.kota:'Tomohon'), tgl:iso(t),
     penerima:'', sales:'', pic:(db&&db.def?db.def.pic:'KRISNI JACKY ENRIKO SAROINSONG')
   };
 }
@@ -445,7 +507,8 @@ function awal(){
   return {
     def:{cabang:'ASTRA DAIHATSU CABANG TOMOHON',outlet:'ASTRA DAIHATSU TOMOHON',kota:'Tomohon',pic:'KRISNI JACKY ENRIKO SAROINSONG',bhs:'en'},
     sales:SALES_AWAL.slice(0), outlet:[], cabang:[], hadiah:[], event:[], pic:[],
-    saved:[], current:null, v:1
+    saved:[], current:null, v:1,
+    sheet:{url:'',token:''}, listSheet:{list:[],sales:[],waktu:''}
   };
 }
 
@@ -804,7 +867,7 @@ function bagikanJPG(){
    ========================================================= */
 var IKAT=[['i-cabang','cabang'],['i-hadiah','hadiah'],['i-outlet','outlet'],['i-event','event'],
   ['i-nama','nama'],['i-ktp','ktp'],['i-alamat1','alamat1'],['i-alamat2','alamat2'],['i-hp','hp'],
-  ['i-spk','spk'],['i-kota','kota'],['i-tgl','tgl'],['i-penerima','penerima'],['i-pic','pic']];
+  ['i-spk','spk'],['i-tglEvent','tglEvent'],['i-kota','kota'],['i-tgl','tgl'],['i-penerima','penerima'],['i-pic','pic']];
 var editId=null;
 
 function isiFormulir(){
@@ -813,6 +876,7 @@ function isiFormulir(){
   $('i-bulan').value=String(d.bulan);
   $('i-tahun').value=d.tahun;
   isiSalesSelect(d.sales);
+  isiPilihHadiah();
   fotoTampil();
   $('editInfo').style.display=editId?'block':'none';
   if(editId)$('editInfo').textContent='Sedang menyunting data tersimpan atas nama '+(up(d.nama)||'—')+'. Tekan "Simpan ke daftar" untuk memperbarui.';
@@ -922,9 +986,21 @@ function simpanKeDaftar(){
   ingat(db.hadiah,d.hadiah); ingat(db.event,d.event); ingat(db.outlet,d.outlet);
   ingat(db.cabang,d.cabang); ingat(db.pic,d.pic);
   if(d.sales&&db.sales.indexOf(d.sales)<0)db.sales.push(d.sales);
+  /* tombol Simpan ditekan lagi untuk data yang sama -> perbarui, jangan buat ganda */
+  if(!editId){
+    for(var g0=0;g0<db.saved.length;g0++){
+      var z=db.saved[g0];
+      if(up(z.nama)===up(d.nama)&&up(z.hadiah)===up(d.hadiah)&&(z.tgl||'')===(d.tgl||'')){editId=z.id;break;}
+    }
+  }
   var salin=JSON.parse(JSON.stringify(d));
   if(editId){
-    for(var i=0;i<db.saved.length;i++)if(db.saved[i].id===editId){salin.id=editId;salin.pilih=db.saved[i].pilih!==false;db.saved[i]=salin;break;}
+    for(var i=0;i<db.saved.length;i++)if(db.saved[i].id===editId){
+      var lama=db.saved[i];
+      salin.id=editId;salin.pilih=lama.pilih!==false;
+      salin.kodeSheet=lama.kodeSheet||''; salin.barisSheet=lama.barisSheet||'';
+      salin.sidik=lama.sidik||''; salin.sinkron=lama.sinkron||'';
+      db.saved[i]=salin;break;}
     toast('Data diperbarui');
   }else{
     salin.id='b'+Date.now()+Math.floor(Math.random()*900);
@@ -932,8 +1008,10 @@ function simpanKeDaftar(){
     db.saved.unshift(salin);
     toast('Tersimpan ke daftar');
   }
+  var idKirim=salin.id;
   editId=null;
   isiDatalist(); daftarSales(); isiFormulir(); daftarUlang(); hitung(); simpanData();
+  kirimKeSheet(idKirim);
 }
 $('btSimpan').onclick=simpanKeDaftar;
 $('bSimpan').onclick=simpanKeDaftar;
@@ -941,6 +1019,8 @@ $('btBaru').onclick=function(){
   if(!confirm('Kosongkan formulir untuk berita acara baru?'))return;
   editId=null; db.current=kosong(); isiFormulir(); simpanData(); buka('form');
 };
+/* salinan kerja tidak membawa status kiriman */
+function bersihkanStatus(d){delete d.kodeSheet;delete d.barisSheet;delete d.sidik;delete d.sinkron;delete d.pesanSinkron;return d;}
 
 /* ---------- daftar tersimpan ---------- */
 function hitung(){$('cnt').textContent=db.saved.length?'('+db.saved.length+')':'';}
@@ -955,21 +1035,24 @@ function daftarUlang(){
       '<div class="tx"><b>'+esc(up(d.nama)||'(tanpa nama)')+'</b>'+
       '<span>'+esc(up(d.hadiah)||'—')+'</span>'+
       '<span>'+esc(BLN[d.bulan]||'')+' '+esc(d.tahun||'')+' · '+esc(up(d.sales)||'tanpa salesman')+'</span>'+
+      labelSinkron(d)+
       '<label class="chk" style="margin-top:5px"><input type="checkbox" data-c="'+d.id+'"'+(d.pilih!==false?' checked':'')+'> dicetak</label>'+
       '</div>'+
       '<div class="ac">'+
       '<button class="btn sm" data-e="'+d.id+'">Sunting</button>'+
       '<button class="btn ghost sm" data-d="'+d.id+'">Hapus</button>'+
+      (db.sheet.url&&d.sinkron!=='ok'&&d.sinkron!=='kirim'?'<button class="btn ghost sm" data-k="'+d.id+'">Kirim</button>':'')+
       '</div></div>';
   }
   b.innerHTML=h;
   var bt=b.querySelectorAll('button');
   for(var k=0;k<bt.length;k++)(function(x){
     x.onclick=function(){
-      var id=x.getAttribute('data-e')||x.getAttribute('data-d');
+      var id=x.getAttribute('data-e')||x.getAttribute('data-d')||x.getAttribute('data-k');
+      if(x.hasAttribute('data-k')){kirimKeSheet(id,true);return;}
       if(x.hasAttribute('data-e')){
         for(var j=0;j<db.saved.length;j++)if(db.saved[j].id===id){
-          db.current=JSON.parse(JSON.stringify(db.saved[j])); editId=id; isiFormulir(); buka('form'); break;}
+          db.current=bersihkanStatus(JSON.parse(JSON.stringify(db.saved[j]))); editId=id; isiFormulir(); buka('form'); break;}
       }else{
         if(!confirm('Hapus berita acara ini?'))return;
         for(var m=0;m<db.saved.length;m++)if(db.saved[m].id===id){db.saved.splice(m,1);break;}
@@ -1085,6 +1168,190 @@ $('btZip').onclick=function(){
   toast(f.length+' foto diunduh dalam ZIP');
 };
 
+
+/* =========================================================
+   LIST HADIAH (Google Sheet lewat Apps Script Web App)
+   ========================================================= */
+var BLN_KODE=['JAN','FEB','MAR','APR','MEI','JUN','JUL','AGU','SEP','OKT','NOV','DES'];
+function panggilSheet(data){
+  if(!db.sheet.url)return Promise.reject(new Error('Alamat Web App belum diisi (tab Data).'));
+  data.token=db.sheet.token||'';
+  var jalan=fetch(db.sheet.url,{method:'POST',body:JSON.stringify(data),redirect:'follow'})
+    .then(function(r){return r.text();})
+    .then(function(t){
+      var j=null; try{j=JSON.parse(t);}catch(e){}
+      if(!j)throw new Error('Balasan sheet tidak dikenali. Periksa alamat Web App & izin aksesnya (Anyone).');
+      if(!j.ok)throw new Error(j.pesan||'Ditolak oleh sheet');
+      return j;
+    });
+  var batas=new Promise(function(res,rej){setTimeout(function(){rej(new Error('Waktu habis — sinyal lemah?'));},30000);});
+  return Promise.race([jalan,batas]);
+}
+
+/* ---- memuat daftar hadiah ---- */
+var sedangMuat=false;
+function muatList(diam){
+  if(!db.sheet.url){ if(!diam)toast('Isi alamat Web App di tab Data dulu'); return Promise.resolve(false); }
+  if(sedangMuat)return Promise.resolve(false);
+  sedangMuat=true; $('btMuatList').disabled=true;
+  if(!diam)toast('Memuat list hadiah…');
+  return panggilSheet({aksi:'list'}).then(function(j){
+    db.listSheet={list:j.list||[],sales:j.sales||[],waktu:new Date().toISOString()};
+    simpanData(); isiPilihHadiah(); isiSambungan();
+    if(!diam)toast(j.list.length+' hadiah dimuat dari sheet');
+    return true;
+  }).catch(function(e){
+    $('sheetInfo').textContent='Gagal memuat: '+e.message;
+    if(!diam)toast('Gagal memuat list: '+e.message);
+    return false;
+  }).then(function(x){sedangMuat=false;$('btMuatList').disabled=false;return x;});
+}
+$('btMuatList').onclick=function(){muatList(false);};
+
+function cariKode(k){
+  var L=db.listSheet.list;
+  for(var i=0;i<L.length;i++)if(L[i].kode&&L[i].kode.toUpperCase()===String(k).toUpperCase())return L[i];
+  return null;
+}
+function isiPilihHadiah(){
+  var d=db.current, s=$('i-pilihHadiah'), L=db.listSheet.list||[];
+  var grup={}, urut=[];
+  for(var i=0;i<L.length;i++){
+    var it=L[i];
+    if(!it.kode)continue;
+    var milikIni=d.kode&&it.kode===d.kode;
+    if(it.penerima&&!milikIni)continue;             /* sudah diserahkan */
+    var g=it.event||'(tanpa nama event)';
+    if(!grup[g]){grup[g]={tgl:it.tglEvent||'',isi:[]};urut.push(g);}
+    if((it.tglEvent||'')>grup[g].tgl)grup[g].tgl=it.tglEvent||'';
+    grup[g].isi.push(it);
+  }
+  urut.sort(function(a,b){return grup[a].tgl<grup[b].tgl?1:(grup[a].tgl>grup[b].tgl?-1:0);});
+  var h='<option value="">✎ Isi manual — hadiah baru / tidak ada di list</option>';
+  for(var u=0;u<urut.length;u++){
+    var gg=grup[urut[u]];
+    h+='<optgroup label="'+esc(urut[u])+'">';
+    for(var k=0;k<gg.isi.length;k++)h+='<option value="'+esc(gg.isi[k].kode)+'">'+esc(gg.isi[k].kode+' · '+gg.isi[k].hadiah)+'</option>';
+    h+='</optgroup>';
+  }
+  if(d.kode&&!cariKode(d.kode))h+='<option value="'+esc(d.kode)+'">'+esc(d.kode+' · '+(d.hadiah||''))+'</option>';
+  s.innerHTML=h;
+  s.value=d.kode||'';
+  tampilModeHadiah();
+}
+function tampilModeHadiah(){
+  var d=db.current, info=$('hadiahInfo');
+  var terhubung=!!d.kode;
+  $('i-hadiah').readOnly=terhubung;
+  $('boxTglEvent').style.display=terhubung?'none':'block';
+  if(!db.sheet.url){
+    info.textContent='Belum tersambung ke sheet — isi nama hadiah manual di bawah. Sambungan diatur di tab Data.';
+  }else if(terhubung){
+    info.textContent='Terhubung ke baris '+d.kode+' di LIST HADIAH. Saat disimpan, penerima, salesman, tanggal, No SPK dan No HP diisikan ke baris itu.';
+  }else{
+    var n=0,L=db.listSheet.list||[];for(var i=0;i<L.length;i++)if(L[i].kode&&!L[i].penerima)n++;
+    info.textContent=(db.listSheet.waktu?n+' hadiah belum diserahkan di list. ':'List belum dimuat — tekan ↻. ')+'Mode manual: hadiah akan ditambahkan sebagai baris baru di LIST HADIAH.';
+  }
+}
+$('i-pilihHadiah').onchange=function(){
+  var d=db.current, k=this.value;
+  if(!k){
+    d.kode=''; $('i-hadiah').readOnly=false;
+    tampilModeHadiah(); simpanData(); $('i-hadiah').focus(); return;
+  }
+  var it=cariKode(k); if(!it)return;
+  d.kode=it.kode; d.hadiah=it.hadiah; d.event=it.event; d.tglEvent=it.tglEvent||'';
+  if(it.tglEvent){var p=it.tglEvent.split('-'); if(p.length===3){d.bulan=parseInt(p[1],10)-1;d.tahun=parseInt(p[0],10);}}
+  $('i-hadiah').value=d.hadiah; $('i-event').value=d.event; $('i-tglEvent').value=d.tglEvent;
+  $('i-bulan').value=String(d.bulan); $('i-tahun').value=d.tahun;
+  tampilModeHadiah(); simpanData();
+};
+
+/* ---- mengirim BAST ke sheet ---- */
+function sidikData(d){
+  return [d.kode||'',d.nama,d.hadiah,d.event,d.tglEvent,d.sales,d.tgl,d.spk,d.hp,(d.foto||d.foto2)?1:0].join('|');
+}
+function labelSinkron(d){
+  if(!db.sheet.url&&!d.sinkron)return '';
+  if(d.sinkron==='ok')return '<span class="sync ok">✓ LIST HADIAH · '+esc(d.kodeSheet||'')+'</span>';
+  if(d.sinkron==='kirim')return '<span class="sync antre">Mengirim ke sheet…</span>';
+  if(d.sinkron==='gagal')return '<span class="sync gagal">Belum masuk sheet: '+esc(d.pesanSinkron||'')+'</span>';
+  return '<span class="sync antre">Menunggu dikirim ke sheet</span>';
+}
+function kirimKeSheet(id,paksa){
+  var d=null;
+  for(var i=0;i<db.saved.length;i++)if(db.saved[i].id===id){d=db.saved[i];break;}
+  if(!d||!db.sheet.url)return Promise.resolve(false);
+  var sidik=sidikData(d);
+  if(!paksa&&d.sinkron==='ok'&&d.sidik===sidik)return Promise.resolve(true);
+  if(d.sinkron==='kirim')return Promise.resolve(false);
+  d.sinkron='kirim'; daftarUlang(); simpanData();
+  var kode=d.kode||d.kodeSheet||'';
+  return panggilSheet({aksi:'simpan',data:{
+    kode:kode, milikSendiri:!!d.kodeSheet&&d.kodeSheet===kode,
+    nama:d.nama, hadiah:d.hadiah, event:d.event, tglEvent:d.tglEvent||'', sales:d.sales,
+    tgl:d.tgl, spk:d.spk, hp:d.hp, adaFoto:!!(d.foto||d.foto2)
+  }}).then(function(j){
+    d.sinkron='ok'; d.kodeSheet=j.kode; d.barisSheet=j.baris; d.sidik=sidik; d.pesanSinkron='';
+    if(!d.kode)d.kode=j.kode;
+    /* perbarui salinan list supaya hadiah ini tidak muncul lagi sebagai pilihan */
+    var it=cariKode(j.kode);
+    if(it){it.penerima=up(d.nama);}
+    else db.listSheet.list.push({kode:j.kode,event:up(d.event),tglEvent:d.tglEvent||d.tgl,hadiah:up(d.hadiah),penerima:up(d.nama),baris:j.baris});
+    if(db.current&&!db.current.kode&&editId===id)db.current.kode=j.kode;
+    toast(j.aksi==='tambah'?'Ditambahkan ke LIST HADIAH baris '+j.baris+' ('+j.kode+')':'LIST HADIAH baris '+j.baris+' ('+j.kode+') diperbarui');
+    return true;
+  }).catch(function(e){
+    d.sinkron='gagal'; d.pesanSinkron=e.message;
+    toast('Tersimpan di HP, belum masuk sheet: '+e.message);
+    return false;
+  }).then(function(x){daftarUlang();isiPilihHadiah();simpanData();return x;});
+}
+function kirimTertunda(diam){
+  var antre=[];
+  for(var i=db.saved.length-1;i>=0;i--){var d=db.saved[i];if(d.sinkron!=='ok'||d.sidik!==sidikData(d))antre.push(d.id);}
+  if(!antre.length){if(!diam)toast('Semua data sudah ada di sheet');return Promise.resolve();}
+  var idx=0;
+  function lanjut(){ if(idx>=antre.length)return Promise.resolve(); return kirimKeSheet(antre[idx++]).then(lanjut); }
+  return lanjut();
+}
+window.addEventListener('online',function(){ if(db&&db.sheet.url)kirimTertunda(true); });
+
+/* ---- pengaturan sambungan ---- */
+function isiSambungan(){
+  $('s-url').value=db.sheet.url||''; $('s-token').value=db.sheet.token||'';
+  var ls=db.listSheet;
+  $('sheetInfo').textContent=!db.sheet.url?'Belum tersambung.':
+    (ls.waktu?'Tersambung. '+ls.list.length+' hadiah di list, dimuat '+new Date(ls.waktu).toLocaleString('id-ID')+'.':'Alamat sudah diisi — tekan "Tes & muat list hadiah".');
+}
+$('s-url').oninput=function(){db.sheet.url=this.value.trim();simpanData();tampilModeHadiah();};
+$('s-token').oninput=function(){db.sheet.token=this.value.trim();simpanData();};
+$('btTesSheet').onclick=function(){
+  db.sheet.url=$('s-url').value.trim(); db.sheet.token=$('s-token').value.trim(); simpanData();
+  if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(db.sheet.url)){toast('Alamat harus diawali https://script.google.com/…');return;}
+  $('sheetInfo').textContent='Menghubungi sheet…';
+  muatList(false).then(function(ok){ if(ok){isiSambungan();daftarUlang();} });
+};
+$('btKirimTunda').onclick=function(){ if(!db.sheet.url){toast('Isi alamat Web App dulu');return;} kirimTertunda(false); };
+
+/* ---- menambah hadiah ke list tanpa penerima ---- */
+$('btTambahHadiah').onclick=function(){
+  var h=$('t-hadiah').value.trim(), ev=$('t-event').value.trim(), tg=$('t-tgl').value, n=parseInt($('t-qty').value,10)||1;
+  if(!db.sheet.url){toast('Isi alamat Web App dulu');return;}
+  if(!h){toast('Nama hadiah belum diisi');$('t-hadiah').focus();return;}
+  if(!ev){toast('Nama event belum diisi');$('t-event').focus();return;}
+  if(!tg){toast('Tanggal event belum diisi');$('t-tgl').focus();return;}
+  if(n<1||n>50){toast('Jumlah unit 1–50');return;}
+  var bt=this; bt.disabled=true; toast('Menambahkan ke sheet…');
+  panggilSheet({aksi:'tambahHadiah',data:{hadiah:h,event:ev,tglEvent:tg,jumlah:n}}).then(function(j){
+    ingat(db.hadiah,h); ingat(db.event,ev); isiDatalist();
+    $('t-hadiah').value=''; $('t-qty').value='1';
+    toast(j.kode.length+' hadiah ditambahkan: '+j.kode.join(', '));
+    return muatList(true);
+  }).catch(function(e){toast('Gagal: '+e.message);})
+    .then(function(){bt.disabled=false;});
+};
+
 /* ---------- tombol bawah ---------- */
 $('bPratinjau').onclick=function(){buka('cet');};
 $('bCetak').onclick=function(){ambilFormulir();cetak();};
@@ -1102,6 +1369,11 @@ function rapikanDB(){
   for(var k in a.def)if(db.def[k]===undefined)db.def[k]=a.def[k];
   ['sales','outlet','cabang','hadiah','event','pic','saved'].forEach(function(k){if(!db[k])db[k]=[];});
   if(!db.current)db.current=kosong();
+  if(!db.sheet)db.sheet={url:'',token:''};
+  if(!db.listSheet||!db.listSheet.list)db.listSheet={list:[],sales:[],waktu:''};
+  if(db.current.kode===undefined)db.current.kode='';
+  if(db.current.tglEvent===undefined)db.current.tglEvent='';
+  for(var q0=0;q0<db.saved.length;q0++)if(db.saved[q0].sinkron==='kirim')db.saved[q0].sinkron='antre';
   if(db.current.foto2===undefined)db.current.foto2='';
   for(var j0=0;j0<db.saved.length;j0++)if(db.saved[j0].foto2===undefined)db.saved[j0].foto2='';
   for(var i=0;i<db.saved.length;i++){
@@ -1110,11 +1382,12 @@ function rapikanDB(){
   }
 }
 function mulaiUI(){
-  isiBulanSelect(); isiDatalist(); isiDefault(); daftarSales(); isiFormulir(); daftarUlang(); hitung();
+  isiBulanSelect(); isiDatalist(); isiDefault(); isiSambungan(); daftarSales(); isiFormulir(); daftarUlang(); hitung();
   $('sub').textContent=db.def.cabang||'Astra Daihatsu';
 }
 muat().then(function(x){
   db=x; rapikanDB(); pasangIkatan(); mulaiUI(); simpanData();
+  if(db.sheet.url){ muatList(true).then(function(){kirimTertunda(true);}); }
   if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
 });
 window.addEventListener('beforeprint',function(){ if(!$('lembar').children.length)bangunLembar(); });

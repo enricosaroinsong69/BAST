@@ -1,6 +1,6 @@
 /* Berita Acara Serah Terima Hadiah — service worker
    ATURAN: naikkan VERSI setiap kali index.html diganti. */
-var VERSI = "bast-v2";
+var VERSI = "bast-v3";
 var ISI = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function(e){
@@ -17,6 +17,7 @@ self.addEventListener('fetch', function(e){
   var r = e.request;
   if(r.method!=='GET') return;
   var u = new URL(r.url);
+  if(u.origin !== self.location.origin) return;   /* Apps Script & domain lain tidak dicampuri */
   var jaringanDulu = r.mode==='navigate' || /\.(html|webmanifest|json)$/.test(u.pathname);
   if(jaringanDulu){
     e.respondWith(

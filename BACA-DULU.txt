@@ -7,6 +7,8 @@ ISI FOLDER
   sw.js                   supaya bisa dibuka tanpa internet
   icon-192.png/512.png    ikon aplikasi
   BACA-DULU.txt           berkas ini
+  apps-script/            Kode.gs + PANDUAN-SAMBUNG-SHEET.txt untuk
+                          menyambungkan ke sheet LIST HADIAH
 
 CARA PAKAI PALING CEPAT
   Buka index.html lewat peramban (Chrome/Edge/Safari) — bisa langsung dipakai.
